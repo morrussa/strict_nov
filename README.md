@@ -1,13 +1,19 @@
-# Welcome to Defold
+# StrictNov
 
-This project was created from the "empty" project template.
+StrictNov is a high-reliability narrative engine for the Defold game engine. Unlike traditional visual novel frameworks that rely on runtime debugging, StrictNov utilizes a custom, machine-optimized syntax (MCODE) paired with an extremely strict static checker to ensure your narrative logic is airtight and bug-free.
 
-The settings in ["game.project"](defold://open?path=/game.project) are all the default. A bootstrap empty ["main.collection"](defold://open?path=/main/main.collection) is included.
+Narrative scripts often fail due to "invisible" errors: an unclosed if statement, a broken jump target, or an accidental infinite loop. StrictNov solves this by enforcing a syntax that is easy for humans to write but impossible for machines to misinterpret.
 
-Check out [the documentation pages](https://defold.com/learn) for examples, tutorials, manuals and API docs.
+The included mcode_checker.py acts as a compiler for your story, catching:
 
-If you run into trouble, help is available in [our forum](https://forum.defold.com).
+    Logic Leaks: Blocks not explicitly closed with E (End), G (Goto), or > (Options).
 
-Happy Defolding!
+    Flow Anomalies: Potential infinite loops and unreachable dialogue blocks.
 
----
+    Structural Integrity: Improperly nested I (If) blocks or cross-block logic violations.
+
+    Dead Ends: Dialogue paths that lead nowhere.
+
+# MCODE Syntax Overview
+
+MCODE uses single-character prefixes to maximize parsing speed and clarity.
