@@ -46,7 +46,7 @@ S	*Speed*: Sets the typewriter text speed (frames per char).	S20
 
 Command	Description	Example
 
-I(...)	*If Block*: Complex conditional logic. Must be closed with an I.	I($score > 10)
+I(...)	*If Block*: Complex conditional logic. Must be closed with an single I.	I($score > 10)
 
 ?(...)	*Inline If*: Simple, one-line conditional check.	?($gold < 5) TYou are poor.
 
