@@ -20,23 +20,35 @@ MCODE uses single-character prefixes to maximize parsing speed and clarity.
 
 1. Structural Commands
 Command	Description	Example
+
 O	Object/Block: Defines the start of a dialogue segment.	OStart_Scene
+
 A	Anchor: A target point for jumping within or between blocks.	ALabel01
+
 G	Goto: Manually jump to a specific Anchor.	GLabel01
+
 E	End: Closes the current block and disables the UI.	E
 
 2. Narrative & Visuals
 Command	Description	Example
+
 T	Text: The dialogue content. Supports \n and Rich Text tags.	THello, world!
+
 N	Name: Sets the name of the current speaker.	NNarrator
+
 C	Character: Changes character animations/expressions.	Cosage_happy
+
 S	Speed: Sets the typewriter text speed (frames per char).	S20
 
 3. Logic & Variables
 Command	Description	Example
+
 I(...)	If Block: Complex conditional logic. Must be closed with an I.	I($score > 10)
+
 ?(...)	Inline If: Simple, one-line conditional check.	?($gold < 5) TYou are poor.
+
 M(...)	Manage: Variable modification (Set, +, -, *, /).	M($hp == 10, -)
+
 >	Option: Defines a player choice and its jump target.	>Yes#OPath_A
 
 # The Static Checker (mcode_checker.py)
