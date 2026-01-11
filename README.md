@@ -75,3 +75,5 @@ Users are responsible for their own actions; the engine only needs to define the
 the rich text is an aggregated array. Most text animations are completed within the *update* function.
 
 The code that enables the test is shown in *main.script* as an example of external startup.(PRESS U)
+
+由于是自用引擎，所以大部分的注释和print都还是中文，不过问题不大。
