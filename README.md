@@ -19,6 +19,7 @@ The included dialogue/mcode_checker.py acts as a compiler for your story, catchi
 MCODE uses single-character prefixes to maximize parsing speed and clarity.
 
 1. Structural Commands
+
 Command	Description	Example
 
 O	Object/Block: Defines the start of a dialogue segment.	OStart_Scene
@@ -30,6 +31,7 @@ G	Goto: Manually jump to a specific Anchor.	GLabel01
 E	End: Closes the current block and disables the UI.	E
 
 2. Narrative & Visuals
+
 Command	Description	Example
 
 T	Text: The dialogue content. Supports \n and Rich Text tags.	THello, world!
@@ -41,6 +43,7 @@ C	Character: Changes character animations/expressions.	Cosage_happy
 S	Speed: Sets the typewriter text speed (frames per char).	S20
 
 3. Logic & Variables
+
 Command	Description	Example
 
 I(...)	If Block: Complex conditional logic. Must be closed with an I.	I($score > 10)
@@ -56,7 +59,9 @@ M(...)	Manage: Variable modification (Set, +, -, *, /).	M($hp == 10, -)
 The heart of StrictNov is its Python-based static analyzer. Before launching your game, run the checker to audit your dialogue.txt.
 
 How to run:
+
 Bash
 
 cd dialogue
+
 python mcode_checker.py dialogue.txt
