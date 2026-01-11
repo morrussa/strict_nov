@@ -22,35 +22,35 @@ MCODE uses single-character prefixes to maximize parsing speed and clarity.
 
 Command	Description	Example
 
-O	Object/Block: Defines the start of a dialogue segment.	OStart_Scene
+O	*Object*: Defines the start of a dialogue segment.	OStart_Scene
 
-A	Anchor: A target point for jumping within or between blocks.	ALabel01
+A	*Anchor*: A target point for jumping within or between blocks.	ALabel01
 
-G	Goto: Manually jump to a specific Anchor.	GLabel01
+G	*Goto*: Manually jump to a specific Anchor.	GLabel01
 
-E	End: Closes the current block and disables the UI.	E
+E	*End*: Closes the current block and disables the UI.	E
 
 2. Narrative & Visuals
 
 Command	Description	Example
 
-T	Text: The dialogue content. Supports \n and Rich Text tags.	THello, world!
+T	*Text*: The dialogue content. Supports \n and Rich Text tags.	THello, world!
 
-N	Name: Sets the name of the current speaker.	NNarrator
+N	*Name*: Sets the name of the current speaker.	NNarrator
 
-C	Character: Changes character animations/expressions.	Cosage_happy
+C	*Character*: Changes character animations/expressions.	Cosage_happy
 
-S	Speed: Sets the typewriter text speed (frames per char).	S20
+S	*Speed*: Sets the typewriter text speed (frames per char).	S20
 
 3. Logic & Variables
 
 Command	Description	Example
 
-I(...)	If Block: Complex conditional logic. Must be closed with an I.	I($score > 10)
+I(...)	*If Block*: Complex conditional logic. Must be closed with an I.	I($score > 10)
 
-?(...)	Inline If: Simple, one-line conditional check.	?($gold < 5) TYou are poor.
+?(...)	*Inline If*: Simple, one-line conditional check.	?($gold < 5) TYou are poor.
 
-M(...)	Manage: Variable modification (Set, +, -, *, /).	M($hp == 10, -)
+M(...)	*Manage*: Variable modification (Set, +, -, *, /).	M($hp == 10, -)
 
 >	Option: Defines a player choice and its jump target.	>Yes#OPath_A
 
@@ -65,3 +65,13 @@ Bash
 cd dialogue
 
 python mcode_checker.py dialogue.txt
+
+# tips
+
+When you call story_functions.lua using F, it is recommended to use *self.story.xxx* and *self.readonly.xxx*
+
+Users are responsible for their own actions; the engine only needs to define the dangerous areas.
+
+the rich text is an aggregated array. Most text animations are completed within the *update* function.
+
+The code that enables the test is shown in *main.script* as an example of external startup.(PRESS U)
