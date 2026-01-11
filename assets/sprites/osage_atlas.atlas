@@ -1,0 +1,8 @@
+images {
+  image: "/assets/sprites/gunmu.png"
+}
+images {
+  image: "/assets/sprites/20251231.png"
+  pivot_y: 1.0
+}
+extrude_borders: 2

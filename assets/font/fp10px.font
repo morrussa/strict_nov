@@ -1,0 +1,8 @@
+font: "/assets/font/fp10px.ttf"
+material: "/builtins/fonts/font.material"
+size: 20
+antialias: 0
+all_chars: true
+cache_width: 10000
+cache_height: 1600
+characters: " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"

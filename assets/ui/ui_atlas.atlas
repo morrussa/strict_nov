@@ -1,0 +1,11 @@
+images {
+  image: "/assets/ui/\345\257\271\350\257\235\346\241\206.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/ui/\346\226\207\345\255\227\351\200\201.png"
+}
+images {
+  image: "/assets/ui/\351\200\211\351\241\271.png"
+}
+extrude_borders: 2

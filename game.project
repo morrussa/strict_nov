@@ -1,0 +1,27 @@
+[bootstrap]
+main_collection = /main/main.collectionc
+
+[script]
+shared_state = 1
+
+[display]
+width = 640
+height = 480
+high_dpi = 1
+fullscreen = 0
+
+[android]
+input_method = HiddenInputField
+
+[html5]
+scale_mode = stretch
+
+[project]
+title = mcode_example
+custom_resources = /dialogue/
+dependencies#0 = https://github.com/d954mas/defold-utf8/archive/master.zip
+
+[graphics]
+default_texture_min_filter = nearest
+default_texture_mag_filter = nearest
+

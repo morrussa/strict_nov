@@ -1,0 +1,552 @@
+local rtext_parser = require("main.modules.rich_text")
+local temp_var_manager = require("main.modules.temp_var_manager")
+local save_manager = require("main.modules.save_manager")
+local story_functions = require("main.modules.story_functions")
+local total_timer = 0
+-- -------------------------------------------------------------------------
+-- 1. 辅助工具
+-- -------------------------------------------------------------------------
+local function check_and_index(index_table, key, line_num, type_label)
+	if index_table[key] then
+		print(string.format("！！！数据错误：检测到重复的%s索引 [%s]！原行号：%d，新行号：%d", 
+		type_label, tostring(key), index_table[key], line_num))
+		return false
+	else
+		index_table[key] = line_num
+		print(string.format("已建立%s索引 %s -> 行号%d", type_label, tostring(key), line_num))
+		return true
+	end
+end
+
+local function left(text, count)
+	if count <= 0 then return "" end
+	return utf8.sub(text, 1, count)
+end
+
+--别问，defold自带的换行逻辑是坏的。
+local function auto_warp(text, threshold)
+	local result = ""
+	local count = 0
+	for p in utf8.next, text do
+		local next_p = utf8.next(text, p)
+		local char = text:sub(p, (next_p or #text + 1) - 1)
+		
+		if char == "\n" then
+			count = 0
+		else
+			count = count + 1
+		end
+
+		result = result .. char
+
+		if count >= threshold then
+			result = result .. "\n"
+			count = 0
+		end
+	end
+	return result
+end
+-- -------------------------------------------------------------------------
+-- 1.1逻辑对比封装
+-- -------------------------------------------------------------------------
+local function evaluate_condition(condition_str)
+	if not condition_str or condition_str == "" then return true end
+
+	-- 移除括号
+	local expr = condition_str:match("%((.+)%)") or condition_str
+
+	-- 处理多条件（目前支持 & 逻辑连接）
+	local conditions = {}
+	for part in expr:gmatch("[^&]+") do
+		table.insert(conditions, part)
+	end
+
+	for _, cond in ipairs(conditions) do
+		-- 匹配 变量名、操作符、对比值
+		-- 支持 ==, <>, >, <, >=, <=
+		local var_raw, op, val_raw = cond:match("([%$#]?[%w_]+)%s*([<>=!]+)%s*([%w_]+)")
+
+		if var_raw and op and val_raw then
+			-- 确定数据源
+			local prefix = var_raw:sub(1,1)
+			local key = (prefix == "$" or prefix == "#") and var_raw:sub(2) or var_raw
+			local manager = (prefix == "#") and temp_var_manager or save_manager
+
+			local current_val = manager.get(key)
+			local target_val = tonumber(val_raw) or (val_raw == "true" and true) or (val_raw == "false" and false) or val_raw
+
+			-- 执行对比
+			local result = false
+			if op == "==" then result = (current_val == target_val)
+			elseif op == "<>" or op == "!=" then result = (current_val ~= target_val)
+			elseif op == ">" then result = (tonumber(current_val) or 0) > (tonumber(target_val) or 0)
+			elseif op == "<" then result = (tonumber(current_val) or 0) < (tonumber(target_val) or 0)
+			elseif op == ">=" then result = (tonumber(current_val) or 0) >= (tonumber(target_val) or 0)
+			elseif op == "<=" then result = (tonumber(current_val) or 0) <= (tonumber(target_val) or 0)
+			end
+
+			if not result then return false end -- 只要有一个条件不成立，整体就不成立
+		end
+	end
+	return true
+end
+-- -------------------------------------------------------------------------
+-- 1.5选项实现
+-- -------------------------------------------------------------------------
+local option_instances = {}
+
+local function create_option(self, text, target, index)
+	local pos = vmath.vector3(320, 330 - (index * 50), 0)
+	local target_key = hash("O" .. target) 
+	local p = factory.create("#options_factory", pos, nil, { target_o = target_key })
+	label.set_text(msg.url(nil, p, "options_label"), text) 
+	table.insert(option_instances, p)
+end
+
+local function clear_options()
+	for _, instance in ipairs(option_instances) do
+		go.delete(instance)
+	end
+	option_instances = {}
+end
+-- -------------------------------------------------------------------------
+-- 1.75 富文本（其实也存了一部分普通打字机的参数）
+-- -------------------------------------------------------------------------
+local rich_text_table = {}
+local glyph_instances = {}
+local glyph_positions = {}
+
+-- local self.story.r_kerning = 20
+-- local self.story.r_leading = 24
+-- local self.story.max_warp = 23
+-- local self.story.r_base_x = 93
+-- local self.story.r_base_y = 134
+
+local function hex_to_color(hex)
+	local r = tonumber(hex:sub(1, 2), 16) / 255
+	local g = tonumber(hex:sub(3, 4), 16) / 255
+	local b = tonumber(hex:sub(5, 6), 16) / 255
+	return vmath.vector4(r, g, b, 1)
+end
+
+local function clear_glyphs()
+	for _, p in ipairs(glyph_instances) do
+		go.delete(p)
+	end
+	glyph_instances = {}
+	glyph_positions = {}
+end
+
+local function render_rich_char(self,index)
+	local col = (index - 1)%self.story.max_warp
+	local row = math.floor((index-1)/self.story.max_warp)
+	
+	local pos = vmath.vector3(self.story.r_base_x + (col*self.story.r_kerning),self.story.r_base_y - (row*self.story.r_leading),1)
+
+	local p = factory.create("#glyph_factory", pos)
+	local label_url = msg.url(nil, p, "glyph_instance")
+	
+	local color_vec = hex_to_color(rich_text_table.colours[index])
+	label.set_text(label_url, rich_text_table.chars[index])
+	go.set(label_url,"color",color_vec)
+	table.insert(glyph_instances, p)
+	table.insert(glyph_positions,pos)
+end
+
+
+-- -------------------------------------------------------------------------
+-- 2. 解析核心
+-- -------------------------------------------------------------------------
+local dialogue_data = {}
+local o_index = {}
+local a_index = {}
+
+local function load_dialogue()
+	local path = "/dialogue/dialogue.txt"
+	local data, error = sys.load_resource(path)
+
+	if data then
+		print("--- 开始对话文件解析与去重检查 ---")
+		local line_count = 0
+		for line in data:gmatch("[^\r\n]+") do
+			line_count = line_count + 1
+			table.insert(dialogue_data, line)
+			print("读取到行内容：" ..line)
+			-- 处理对话块索引 O
+			if line:sub(1,1) == "O" then
+				local key = hash(line)
+				check_and_index(o_index, key, line_count, "对话块(O)")
+				-- 处理锚点索引 A
+			elseif line:sub(1,1) == "A" then
+				local key = hash(line)
+				check_and_index(a_index, key, line_count, "锚点(A)")
+			end
+		end
+		print("--- 解析结束 ---")
+	else
+		print("对话文件加载失败："..(error or "未知错误"))
+	end
+end
+
+
+
+local function process_commands(self)
+	while true do
+		local line = dialogue_data[self.current_line_index]
+		-- local next_line = dialogue_data[self.current_line_index+1]
+		if not line then break end
+
+		local is_skip = false
+		if line:sub(1,1) == "?" then
+			local condition,rest = line:match("^?%((.-)%)(.*)")
+			if condition then
+				if evaluate_condition(condition) then
+					line = rest:gsub("^%s*", "")
+					is_skip = false
+				else
+					print("简易对比不成立："..line)
+					self.current_line_index = self.current_line_index + 1--简易对比不成立
+					is_skip = true
+				end
+			end
+		end
+
+		if not is_skip then
+			if line:sub(1,1) == "S" then--speed
+				local value_str = line:sub(2)
+				local value_num = tonumber(value_str)
+				if value_num then
+					self.story.talk_speed = value_num
+					print("对话间隔已设置为"..self.story.talk_speed)
+				end
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "G" then
+				local target_key_str = "A" .. line:sub(2)
+				local target_key = hash(target_key_str)
+				local target_line = a_index[target_key]
+				if target_line then
+					self.current_line_index = target_line
+					print("成功跃迁到锚点：" .. target_key_str .. " 行号：" .. target_line)
+				else
+					print("错误：找不到锚点 " .. target_key_str)
+					self.current_line_index = self.current_line_index + 1
+				end
+			elseif line:sub(1,1) == "M" then
+				local prefix, key, value_str, op = line:match("M%(([$#])(.-)%s*==%s*(%-?%d+),?%s*([%+%-*/]?)%)")
+
+				if prefix and key and value_str then
+					local value = tonumber(value_str)
+					local manager = (prefix == "$") and save_manager or temp_var_manager
+					key = key:gsub("%s+", "")
+
+					-- 获取当前值用于乘除法计算
+					local current_val = manager.get(key) or 0
+
+					if op == "+" then
+						manager.set(key, current_val + value)
+					elseif op == "-" then
+						manager.set(key, current_val - value)
+					elseif op == "*" then
+						manager.set(key, current_val * value)
+					elseif op == "/" then
+						if value ~= 0 then
+							-- manager.set(key, current_val / value)
+							manager.set(key, math.floor(current_val / value))
+						else
+							print("警告：有笨蛋对话指令尝试除以零！")
+						end
+					else
+						manager.set(key, value)
+					end
+				else
+					print("M指令解析失败: " .. line)
+				end
+			elseif line:sub(1,1) == "I" then
+				local condition_part = line:sub(2):gsub("%s+","")
+				if condition_part ~= "" then
+					print("这是一条条件判断："..condition_part)
+					local is_pass = evaluate_condition(condition_part)
+
+					if not is_pass then
+						print("条件不满足，跳过当前if区块。")
+						local scan_index = self.current_line_index + 1
+
+						while true do
+							local scan_line = dialogue_data[scan_index]
+							if not scan_line then break end
+
+							if scan_line:sub(1,1) == "O" then
+								print("！！！警告！有笨蛋写IF不收束导致探测到其他对话块了！")
+							end
+
+							if scan_line:gsub("%s+", "") == "I" then
+								self.current_line_index = scan_index + 1
+								break
+							end
+							scan_index = scan_index + 1
+						end
+					else
+						self.current_line_index = self.current_line_index + 1-- 条件成立，直接进入下一行
+					end
+				else
+					self.current_line_index = self.current_line_index + 1-- 遇到单独的 I (结束标志)，直接跳过
+				end
+			elseif line:sub(1,1) == ">" then
+				self.is_typing = false
+				self.is_selecting = true
+				local options_to_create = {}
+				local scan_index = self.current_line_index
+
+				while true do
+					local current_scan_line = dialogue_data[scan_index]
+					if not current_scan_line then break end
+
+					local first_char = current_scan_line:sub(1,1)
+					local final_content = nil
+
+					if first_char == ">" then
+						final_content = current_scan_line:sub(2)
+					elseif first_char == "?" then
+						local condition,rest = current_scan_line:match("^?%((.-)%)(.*)")
+						if condition and evaluate_condition(condition) then
+							local trimmed_rest = rest:gsub("^%s*", "")
+							if trimmed_rest:sub(1,1) == ">" then
+								final_content = trimmed_rest:sub(2)
+							end
+						end
+					else
+						break
+					end
+					if final_content then
+						local text,target = final_content:match("([^#]+)#(.+)")
+						if text and target then
+							table.insert(options_to_create, {text = text, target = target})
+						end
+					end
+					scan_index = scan_index + 1
+				end
+
+				for i,opt in ipairs(options_to_create) do
+					create_option(self,opt.text,opt.target,i)
+				end
+
+				self.current_line_index = scan_index
+				break
+			elseif line:sub(1,1) == "N" then--name
+				local namestr = line:sub(2)
+				label.set_text("#名字", namestr)
+				self.readonly.namestr = namestr
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "C" then
+				local biaoqing = line:sub(2)
+				sprite.play_flipbook("/typewriter_core#character_collection", biaoqing)
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "E" then--end
+				print("关掉！关掉！一定要关掉!")
+				self.is_typing = false
+				self.had_chat_box = false
+				self.current_line_index = 0
+				self.current_char_count = 0
+				self.target_text = ""
+				label.set_text("#文字", "")
+				label.set_text("#名字", "")
+				msg.post("/typewriter_core", "disable")
+				return
+			elseif line:sub(1,1) == "O" then
+				print("您已在"..line.."对话块，自动帮您跳转到下一行")
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "A" then
+				print("您已在"..line.."锚点，自动帮您跳转到下一行")
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "F" then
+				local func_name ,param = line:match("F%((%w+),?%s*([^%)]*)%)")
+
+				if func_name and story_functions[func_name] then
+					local arg = tonumber(param) or param
+					if param == "" then arg = nil end
+					story_functions[func_name](self,arg)
+				else
+					print("未找到定义函数："..(func_name or "nil"))
+				end
+				self.current_line_index = self.current_line_index + 1
+			elseif line:sub(1,1) == "T" then
+				-- 1. 基础文本预处理，转换普通换行
+				self.current_char_count = 0
+				local raw_text = line:sub(2)
+				local processed_text = raw_text:gsub("\\n","\n")
+				-- 2. 检查是否包含富文本标签 <key:value>
+				if string.find(processed_text, "<%a+:%w+>") then
+					print("检测到富文本特征，即将调用富文本方法")
+					label.set_text("#文字", "")
+					rtext_parser.parse_rich_text(processed_text,rich_text_table)
+					self.is_rich_text = true
+				else
+					print("普通文本，按原逻辑处理")
+					self.target_text = auto_warp(processed_text, self.story.max_warp)
+					self.is_rich_text = false
+				end
+
+				-- 3. 启动打字机
+				self.is_typing = true
+				self.current_line_index = self.current_line_index + 1
+				msg.post("#文字送", "disable")
+				break
+			else
+				print("无法匹配首字母，自动尝试跳转下一行")
+				self.current_line_index = self.current_line_index + 1
+			end
+		end
+	end
+end
+			
+-- -------------------------------------------------------------------------
+-- 3. 脚本逻辑
+-- -------------------------------------------------------------------------
+local function complete_text(self)
+	self.is_typing = false
+	if self.is_rich_text then
+		for i = self.current_char_count + 1, #rich_text_table.chars do
+			render_rich_char(self, i)
+		end
+		self.current_char_count = #rich_text_table.chars
+	else
+		self.current_char_count = utf8.len(self.target_text)
+		label.set_text("#文字", self.target_text)
+	end
+	msg.post("#文字送", "enable")
+end
+
+function init(self)
+	load_dialogue()
+	self.frame_counter = 0
+	self.is_typing = false
+	self.is_selecting = false
+	self.target_text = ""
+	self.current_char_count = 0
+	self.current_line_index = 1
+	self.is_rich_text = false
+	self.had_chat_box = false
+
+	msg.post("#文字送", "disable")
+	msg.post(".", "acquire_input_focus")--获取输入焦点
+	msg.post(".", "disable")
+
+	self.story = {
+		talk_speed = 5,
+		max_warp = 23,
+		r_kerning= 20,
+		r_leading = 24,
+		--框的左上角锚点
+		r_base_x = 93,
+		r_base_y = 134,
+	}
+
+	self.readonly = {-- readonly: writable but non-authoritative, no render effect
+		namestr = "",
+	}
+end
+
+function update(self, dt)
+	total_timer = total_timer + 1
+	if not self.had_chat_box then return end
+
+	self.frame_counter = self.frame_counter + 1
+	if self.frame_counter >= self.story.talk_speed then
+		self.frame_counter = 0
+		self.current_char_count = self.current_char_count + 1
+		if self.is_rich_text then
+			if self.current_char_count <= #rich_text_table.chars then
+				render_rich_char(self,self.current_char_count)
+			else
+				complete_text(self)
+			end
+		else
+			local display_str = left(self.target_text, self.current_char_count)
+			label.set_text("#文字", display_str)
+			if display_str == self.target_text then
+				complete_text(self)
+			end
+		end
+	end
+	if self.is_rich_text then
+		for i = 1,#glyph_instances do
+			local offset_x = 0
+			local offset_y = 0
+
+			local p = glyph_instances[i]
+			local base_pos = glyph_positions[i]
+			local shake_x = rich_text_table.shake_x[i] or 0
+			local shake_y = rich_text_table.shake_y[i] or 0
+			local wave = rich_text_table.wave[i] or 0
+			local wave_sped = rich_text_table.wave_sped[i] or 0
+
+			if shake_x ~= 0 or shake_y ~= 0 then
+				offset_x = offset_x + math.random(-shake_x,shake_x)
+				offset_y = offset_y +math.random(-shake_y,shake_y)
+			end
+			if wave ~= 0 then
+				offset_y = offset_y + math.sin(wave_sped*total_timer+i*self.story.talk_speed)*wave
+			end
+			go.set_position(vmath.vector3(base_pos.x + offset_x, base_pos.y + offset_y, base_pos.z), p)
+		end
+	end
+end
+
+
+
+function fixed_update(self, dt)
+	-- This function is called if 'Fixed Update Frequency' is enabled in the Engine section of game.project
+	-- Can be coupled with fixed updates of the physics simulation if 'Use Fixed Timestep' is enabled in
+	-- Physics section of game.project
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+-- typewriter.script
+function on_message(self, message_id, message, sender)
+	if message_id == hash("start_dialogue") then
+		msg.post(".", "enable")
+		msg.post(".", "acquire_input_focus")
+ 
+		local target_key = hash("O" .. message.target_id)
+		local target_line = o_index[target_key]
+
+		if target_line then
+			self.had_chat_box = true
+			self.current_line_index = target_line
+			process_commands(self)
+		else
+			print("启动对话失败：找不到索引 " .. message.target_id)
+		end
+
+	elseif message_id == hash("option_selected") then
+		self.is_selecting = false
+		local target_line = o_index[message.target]
+		if target_line then
+			self.current_line_index = target_line
+			clear_options()         
+			process_commands(self)  
+		end
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("key_space") and action.pressed and self.had_chat_box == true then
+		if self.is_typing then
+			complete_text(self)
+		elseif not self.is_selecting then
+			print("对话结束，当前行"..self.current_line_index)
+			if self.is_rich_text then
+				clear_glyphs()
+			end
+			process_commands(self)
+		end
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end

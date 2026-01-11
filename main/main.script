@@ -1,0 +1,13 @@
+-- /main/main.script
+function init(self)
+
+	msg.post(".", "acquire_input_focus")
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("key_u") and action.pressed then
+		print("按下U，准备启动对话...")
+		msg.post("/typewriter_core#typewriter", "start_dialogue", { target_id = "0101" })
+	end
+end
+
