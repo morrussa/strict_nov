@@ -91,6 +91,31 @@ local function evaluate_condition(condition_str)
 	return true
 end
 -- -------------------------------------------------------------------------
+-- 1.2 警告封装
+-- -------------------------------------------------------------------------
+-- 伪代码实现
+local function secure_call_F(self, func_name, arg)
+	-- 记录关键敏感变量的快照
+	local snapshot = {
+		idx = self.current_line_index,
+		sel = self.is_selecting,
+		box = self.had_chat_box
+	}
+
+	story_functions[func_name](self, arg) -- 执行 F
+
+	-- 对比
+	if self.current_line_index ~= snapshot.idx then
+		print("【警告】F 指令篡改了执行路径：G" .. snapshot.idx .. " -> G" .. self.current_line_index)
+	end
+	if self.is_selecting ~= snapshot.sel then
+		print("【警告】F 指令强行修改了选项模态，这可能导致逻辑死锁。")
+	end
+	if self.had_chat_box ~= snapshot.had_chat_box then
+		print("【警告】F 指令强行对话块模态，可能导致未知后果。")
+	end
+end
+-- -------------------------------------------------------------------------
 -- 1.5选项实现
 -- -------------------------------------------------------------------------
 local option_instances = {}
@@ -112,48 +137,38 @@ end
 -- -------------------------------------------------------------------------
 -- 1.75 富文本（其实也存了一部分普通打字机的参数）
 -- -------------------------------------------------------------------------
-local rich_text_table = {}
 local glyph_instances = {}
-local glyph_positions = {}
+-- local glyph_positions = {}
 
--- local self.story.r_kerning = 20
--- local self.story.r_leading = 24
--- local self.story.max_warp = 23
--- local self.story.r_base_x = 93
--- local self.story.r_base_y = 134
-
-local function hex_to_color(hex)
-	local r = tonumber(hex:sub(1, 2), 16) / 255
-	local g = tonumber(hex:sub(3, 4), 16) / 255
-	local b = tonumber(hex:sub(5, 6), 16) / 255
-	return vmath.vector4(r, g, b, 1)
-end
-
-local function clear_glyphs()
+local function clear_glyphs(self)
 	for _, p in ipairs(glyph_instances) do
-		go.delete(p)
+		if go.exists(p) then go.delete(p) end
 	end
 	glyph_instances = {}
-	glyph_positions = {}
+	rtext_parser.prepare_table(self.rich_text_table)
 end
 
-local function render_rich_char(self,index)
-	local col = (index - 1)%self.story.max_warp
-	local row = math.floor((index-1)/self.story.max_warp)
-	
-	local pos = vmath.vector3(self.story.r_base_x + (col*self.story.r_kerning),self.story.r_base_y - (row*self.story.r_leading),1)
+local function render_rich_char(self, index)
+	local col = (index - 1) % self.story.max_warp
+	local row = math.floor((index - 1) / self.story.max_warp)
+	local pos = vmath.vector3(
+	self.story.r_base_x + (col * self.story.r_kerning),
+	self.story.r_base_y - (row * self.story.r_leading), 
+	1)
 
 	local p = factory.create("#glyph_factory", pos)
 	local label_url = msg.url(nil, p, "glyph_instance")
-	
-	local color_vec = hex_to_color(rich_text_table.colours[index])
-	label.set_text(label_url, rich_text_table.chars[index])
-	go.set(label_url,"color",color_vec)
-	table.insert(glyph_instances, p)
-	table.insert(glyph_positions,pos)
+
+	local char = self.rich_text_table.base.chars[index]
+	local color_vec = self.rich_text_table.modal.colours[index] 
+
+	label.set_text(label_url, char)
+	go.set(label_url, "color", color_vec)
+
+	table.insert(glyph_instances, p)  -- 只插入一次！！！
+
+	self.rich_text_table.base.glyph_positions[index] = pos
 end
-
-
 -- -------------------------------------------------------------------------
 -- 2. 解析核心
 -- -------------------------------------------------------------------------
@@ -364,12 +379,14 @@ local function process_commands(self)
 				if func_name and story_functions[func_name] then
 					local arg = tonumber(param) or param
 					if param == "" then arg = nil end
-					story_functions[func_name](self,arg)
+					secure_call_F(self, func_name, arg)
+					-- story_functions[func_name](self,arg)
 				else
 					print("未找到定义函数："..(func_name or "nil"))
 				end
 				self.current_line_index = self.current_line_index + 1
 			elseif line:sub(1,1) == "T" then
+				clear_glyphs(self)
 				-- 1. 基础文本预处理，转换普通换行
 				self.current_char_count = 0
 				local raw_text = line:sub(2)
@@ -378,7 +395,7 @@ local function process_commands(self)
 				if string.find(processed_text, "<%a+:%w+>") then
 					print("检测到富文本特征，即将调用富文本方法")
 					label.set_text("#文字", "")
-					rtext_parser.parse_rich_text(processed_text,rich_text_table)
+					rtext_parser.parse_rich_text(processed_text, self.rich_text_table)
 					self.is_rich_text = true
 				else
 					print("普通文本，按原逻辑处理")
@@ -405,10 +422,10 @@ end
 local function complete_text(self)
 	self.is_typing = false
 	if self.is_rich_text then
-		for i = self.current_char_count + 1, #rich_text_table.chars do
+		for i = self.current_char_count + 1, #self.rich_text_table.base.chars do
 			render_rich_char(self, i)
 		end
-		self.current_char_count = #rich_text_table.chars
+		self.current_char_count = #self.rich_text_table.base.chars
 	else
 		self.current_char_count = utf8.len(self.target_text)
 		label.set_text("#文字", self.target_text)
@@ -426,6 +443,22 @@ function init(self)
 	self.current_line_index = 1
 	self.is_rich_text = false
 	self.had_chat_box = false
+	self.rich_text_table = {
+		base = { 
+			chars = {}, 
+			glyph_positions = {} 
+		},
+		modal = {
+			shake_x = {},
+			shake_y = {},
+			colours = {},
+			wave = {},
+			wave_sped = {}
+		},
+		nonmodal = {
+			shake_screen = {}
+		}
+	}
 
 	msg.post("#文字送", "disable")
 	msg.post(".", "acquire_input_focus")--获取输入焦点
@@ -447,7 +480,7 @@ function init(self)
 end
 
 function update(self, dt)
-	total_timer = total_timer + 1
+	total_timer = total_timer + dt
 	if not self.had_chat_box then return end
 
 	self.frame_counter = self.frame_counter + 1
@@ -455,7 +488,7 @@ function update(self, dt)
 		self.frame_counter = 0
 		self.current_char_count = self.current_char_count + 1
 		if self.is_rich_text then
-			if self.current_char_count <= #rich_text_table.chars then
+			if self.current_char_count <= #self.rich_text_table.base.chars then
 				render_rich_char(self,self.current_char_count)
 			else
 				complete_text(self)
@@ -474,11 +507,12 @@ function update(self, dt)
 			local offset_y = 0
 
 			local p = glyph_instances[i]
-			local base_pos = glyph_positions[i]
-			local shake_x = rich_text_table.shake_x[i] or 0
-			local shake_y = rich_text_table.shake_y[i] or 0
-			local wave = rich_text_table.wave[i] or 0
-			local wave_sped = rich_text_table.wave_sped[i] or 0
+			local base_pos = self.rich_text_table.base.glyph_positions[i]
+			if not base_pos then break end
+			local shake_x = self.rich_text_table.modal.shake_x[i] or 0
+			local shake_y = self.rich_text_table.modal.shake_y[i] or 0
+			local wave = self.rich_text_table.modal.wave[i] or 0
+			local wave_sped = self.rich_text_table.modal.wave_sped[i] or 0
 
 			if shake_x ~= 0 or shake_y ~= 0 then
 				offset_x = offset_x + math.random(-shake_x,shake_x)
@@ -538,7 +572,7 @@ function on_input(self, action_id, action)
 		elseif not self.is_selecting then
 			print("对话结束，当前行"..self.current_line_index)
 			if self.is_rich_text then
-				clear_glyphs()
+				clear_glyphs(self)
 			end
 			process_commands(self)
 		end
