@@ -1,5 +1,8 @@
 # StrictNov
 
+！！注意！！它有一个大更新，但是需要从我自己的项目里抽离出来。我暂时不想动。
+
+
 StrictNov is a high-reliability narrative engine for the Defold game engine. Unlike traditional visual novel frameworks that rely on runtime debugging, StrictNov utilizes a custom, machine-optimized syntax (MCODE) paired with an extremely strict static checker to ensure your narrative logic is airtight and bug-free.
 
 Narrative scripts often fail due to "invisible" errors: an unclosed if statement, a broken jump target, or an accidental infinite loop. StrictNov solves this by enforcing a syntax that is easy for humans to write but impossible for machines to misinterpret.
