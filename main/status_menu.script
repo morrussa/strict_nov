@@ -1,0 +1,131 @@
+local save_manager = require("main.modules.save_manager")
+local i18n = require("main.modules.i18n_manager")
+
+local function is_in_area(px, py, cx, cy, w, h)
+	return px >= (cx - w/2) and px <= (cx + w/2) and 
+	py >= (cy - h/2) and py <= (cy + h/2)
+end
+
+local function change_ui(self)
+	local day_of_week = (self.time_day % 7) + 1
+	local week_keys = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+	label.set_text("#礼拜几", i18n.t(week_keys[day_of_week]))
+
+	if self.min_of_the_day < 300 then
+		label.set_text("#大致时间", i18n.t("about_time_1"))
+	elseif self.min_of_the_day < 480 then
+		label.set_text("#大致时间", i18n.t("about_time_2"))
+	elseif self.min_of_the_day < 660 then
+		label.set_text("#大致时间", i18n.t("about_time_3"))
+	elseif self.min_of_the_day < 780 then
+		label.set_text("#大致时间", i18n.t("about_time_4"))
+	elseif self.min_of_the_day < 1080 then
+		label.set_text("#大致时间", i18n.t("about_time_5"))
+	elseif self.min_of_the_day < 1320 then
+		label.set_text("#大致时间", i18n.t("about_time_6"))
+	else
+		label.set_text("#大致时间", i18n.t("about_time_7"))
+	end
+
+	label.set_text("#理智_文本", i18n.t("reason"))
+	local current_reason = self.reason or 0
+	go.set("/理智#理智", "scale.x", current_reason * 0.66)
+	
+	local money_fmt = i18n.t("money")
+	label.set_text("#有多少钱", string.format(money_fmt, self.money))
+	
+	local date_fmt = i18n.t("ui_date")
+	label.set_text("#日期", string.format(date_fmt, self.time_day))
+	-- label.set_text("#日期",tostring( self.time_day).."日")
+	local time_str = string.format("%02d:%02d", self.time_hour, self.time_min)
+	label.set_text("#时间", time_str)
+end
+
+local function refresh_time_data(self)
+	local total_min = save_manager.get("time_of_day_sec") or 0
+	self.min_of_the_day = total_min % 1440
+	self.time_min = total_min % 60
+	local total_hour = math.floor(total_min / 60)
+	self.time_hour = total_hour % 24
+	self.time_day = math.floor(total_min / 1440) + 1
+end
+
+function init(self)
+	
+	self.money = save_manager.get("money") or 0
+	self.reason = save_manager.get("reason") or 0
+	print("理智"..self.reason)
+	refresh_time_data(self)
+	change_ui(self)
+
+	msg.post(".", "acquire_input_focus")
+	--这句的含义是我要接收信息，既然调试关了所以就不要了
+end
+
+function on_message(self, message_id, message, sender)
+	-- 检查消息 ID 是否匹配 save_manager 中定义的字符串
+	if message_id == hash("data_changed") then
+		-- print("收到 UI 更新请求，变化的键为: " .. message.key)
+		-- 如果是时间变化，重新刷新 UI
+		if message.key == "time_of_day_sec" then
+			refresh_time_data(self)
+			change_ui(self)
+		elseif message.key == "money" then
+			self.money = save_manager.get("money") or 0
+			change_ui(self)
+		elseif message.key == "reason" then
+			self.reason = save_manager.get("reason") or 0
+			change_ui(self)
+		end
+	end
+end
+
+-- -------------------------------------------------------------------------
+-- 测试功能
+-- -------------------------------------------------------------------------
+local phone_shake = 0
+local phone_anim_lock = false
+local phone_target_pos = vmath.vector3(566, 138, 0.4)
+local phone_target_pos2 = vmath.vector3(566, -129, 0.4)
+local touch_phone_lock = false
+
+-- function on_input(self, action_id, action)
+-- 	if action_id == hash("key_h") and action.pressed then
+-- 		phone_shake = 20
+-- 		phone_anim_lock = false
+-- 	end
+-- end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed then
+		if not touch_phone_lock then
+			if is_in_area(action.x, action.y, 601, 69, 22, 30) then
+				print("点薯鸡！")
+				go.animate("/大手机", "position", go.PLAYBACK_ONCE_FORWARD, phone_target_pos, go.EASING_OUTQUART, 0.4, 0, function()
+					print("移动完成！")
+					sprite.play_flipbook("/大手机#大手机", "phone_big2")
+					msg.post("/小手机#小手机", "disable")
+					label.set_text("/大手机#手机_时间", string.format("%02d:%02d", self.time_hour, self.time_min))
+					touch_phone_lock = true
+				end)
+			end
+		else 
+			if not is_in_area(action.x, action.y, 566, 138, 120, 198) then
+				print("你滚")
+				go.animate("/大手机", "position", go.PLAYBACK_ONCE_FORWARD, phone_target_pos2, go.EASING_OUTQUAD, 0.3, 0, function()
+					touch_phone_lock = false
+					msg.post("/小手机#小手机", "enable")
+				end)
+			end
+		end
+	end
+end
+
+function update(self,dt)
+	if phone_shake > 0 and phone_anim_lock == false then
+		local phone_pos = vmath.vector3(601 + math.random(-phone_shake/10,phone_shake/10),69 + math.random(-phone_shake/10,phone_shake/10),0)
+		phone_shake = phone_shake - 1
+		go.set_position(phone_pos, "小手机")
+	end
+	if phone_shake < 0 then phone_shake = 0 elseif phone_shake == 0 then sprite.play_flipbook("/小手机#小手机", "phone1") phone_anim_lock = true else sprite.play_flipbook("/小手机#小手机", "phone2") end
+end

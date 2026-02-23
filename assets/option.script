@@ -1,5 +1,5 @@
 -- option.script
-go.property("target_o", hash("")) 
+go.property("option_index", 0) -- 改为数字索引
 
 function init(self)
 	msg.post(".", "acquire_input_focus")
@@ -13,7 +13,8 @@ function on_input(self, action_id, action)
 		if action.x >= pos.x - w/2 and action.x <= pos.x + w/2 and
 		action.y >= pos.y - h/2 and action.y <= pos.y + h/2 then
 
-			msg.post("/typewriter_core#typewriter", "option_selected", { target = self.target_o })
+			-- 发送选中的索引给 typewriter
+			msg.post("/typewriter_core#typewriter", "option_selected", { index = self.option_index })
 		end
 	end
 end

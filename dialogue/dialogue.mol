@@ -1,0 +1,164 @@
+
+
+O0101_start
+    Cgunmu
+    S5
+    N
+    T门铃轻轻响了两下。
+    N小辫子酱
+    C20251231
+    T哥？
+    N
+    T你过来干什么...
+    N小辫子酱
+    T我逃学了。
+    N
+    T<colour:b3b3b3>啊。
+    T<colour:b3b3b3>嗯？？？？
+    T嗯。
+    T*开门声*
+    N小辫子酱
+    T雨伞我放在门口了。
+    M($osage_in_fangjian = 1)
+    M($O0101_start = true)
+    B /sence switch_random_animation
+E
+
+O01_gotoduihua_shibai
+    B /sence switch_random_animation
+E
+
+A小辫子心情差
+O01_osagechan_0_mood
+    T小辫子酱现在心情很差，还是不要打扰了。
+    B /sence switch_random_animation
+E
+
+O01_ri_chang_dui_hua
+    !start
+    ?($osagechan_mood == 0)GO小辫子心情差
+    C20251231
+    N小辫子酱
+    T<colour:b3b3b3>啊，怎么了？
+    >>亲密接触#01_qinmijiechu
+    >>交流#01_chat
+    >>去洗澡#01_bath
+    >>泡茶#01_tea
+    >>今天该睡了#01_sleep
+<<
+
+    
+O01_qinmijiechu
+    T没做完
+    B /sence switch_random_animation
+E
+    
+O01_chat
+    S3
+    N
+    C20251231
+    F(random_set, #random1:1:3)
+    ?(#random1 == 1)T和小辫子酱谈了些事情。
+    ?(#random1 == 2)T和小辫子酱讲了些事情。
+    ?(#random1 == 3)T和小辫子酱说了些事情。
+    B /sence switch_random_animation
+E
+
+O01_bath
+    C20251231
+    >>自己洗#bath_self
+    >>一起洗#bath_yiqi
+<<
+
+O01_tea
+    F(set_option_style, 选项2)
+    >>茶1(<!$tea1>>个)#tea1
+    >>茶2(<!$tea2>>个)#tea2
+    >>茶3(<!$tea3>>个)#tea3
+<<
+
+O01_sleep
+    F(set_option_style, 选项2)
+    
+    >>一个人睡#sleep_self
+    >>一起睡#sleep_yiqi
+    >>熬夜！熬夜！熬夜！#aoye
+<<
+
+Otea1
+    M($tea1 -= 1)
+    N
+    T反正就是喝了茶
+    B /sence switch_random_animation
+E
+
+Otea2
+    M($tea2 -= 1)
+    N
+    T反正就是喝了茶
+    B /sence switch_random_animation
+E
+
+Otea3
+    M($tea3 -= 1)
+    N
+    T反正就是喝了茶
+    B /sence switch_random_animation
+E
+
+Obath_self
+    B /sence switch_bg_animation {anim = "yushi"}
+    M($osage_in_fangjian = 2)
+    B /sence switch_random_animation
+    N
+    Cgunmu
+    T反正就是洗了澡
+    B /sence switch_bg_animation {anim = "屋内背景"}
+    M($osage_in_fangjian = 1)
+    B /sence switch_random_animation
+E
+
+Obath_yiqi
+    T变态!
+    T(记得提醒morusa更新解锁条件)
+    B /sence switch_random_animation
+E
+
+Osleep_self
+    T那个,哥,我自己去睡客厅吧...
+    >嗯
+M($osage_in_fangjian = 3)
+B /sence switch_bg_animation {anim = "keting"}
+B /sence switch_random_animation
+GOosage_sleep_in_keting
+    >我睡客厅吧
+M($osage_in_fangjian = 1)
+B /sence switch_bg_animation {anim = "屋内背景"}
+B /sence switch_random_animation
+T...
+GOosage_sleep_in_woshi
+<<
+
+Oosage_sleep_in_keting
+    Cgunmu
+    B /sence switch_osage_anim {anim = "osagechan11"}
+    T这里要加一个时间逐渐增加的演出
+E
+
+Oosage_sleep_in_woshi
+    Cgunmu
+    B /sence switch_osage_anim {anim = "osagechan11"}
+    T这里要加一个时间逐渐增加的演出
+E
+
+Oaoye
+N
+T反正就是睡不着
+B /sence switch_random_animation
+E
+
+Osleep_yiqi
+    T变态!
+    T(记得提醒morusa更新解锁条件)
+    B /sence switch_random_animation
+E

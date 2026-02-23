@@ -15,9 +15,16 @@ I为对比if，例I(#im_sb == true & $you_are_sb <> 0)，没有尾的IF为闭合
 G为goto，是手动跳转到对话块。例G0101
 A为Anchor，让goto跳转的那个
 M为manage，意为管理，实际上就是设置（只是S被占用了）语法为
-M(变量名 == 数字,方法)
-加法M($number3 == 0,+)
-减法M($number3 == 0,-)
-设置M($number3 == 0)
+M($gold = 500)
+M($gold += 120)
+M($gold -= 50)
+M($gold *= 2)
+M($gold /= 3)
+M($flag = true)
+M($flag = false)
+M($name = "阿酱")
+M(#temp += 1)
+
+B为广播，即msg outpost，后面可以自定义参数
 
 暂停:显示"文字送"图片,直到按下"space"键并解析下一行

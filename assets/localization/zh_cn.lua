@@ -1,0 +1,21 @@
+return {
+	["ui_date"] = "第%d日",
+	["about_time_1"] = "凌晨",
+	["about_time_2"] = "清晨",
+	["about_time_3"] = "清早",
+	["about_time_4"] = "中午",
+	["about_time_5"] = "下午",
+	["about_time_6"] = "晚上",
+	["about_time_7"] = "深夜",
+	["sunday"] = "星期日",
+	["monday"] = "星期一",
+	["tuesday"] = "星期二",
+	["wednesday"] = "星期三",
+	["thursday"] = "星期四",
+	["friday"] = "星期五",
+	["saturday"] = "星期六",
+	["reason"] = "体力",
+	["money"] = "%d円",
+	-- ["ui_time"] = "时间：%s",
+	-- ["msg_save_success"] = "存档已同步至硬盘"
+}

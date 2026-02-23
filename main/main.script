@@ -1,13 +1,21 @@
 -- /main/main.script
+local save_manager = require("main.modules.save_manager")
+
 function init(self)
-
+	save_manager.load_all()
 	msg.post(".", "acquire_input_focus")
-end
-
-function on_input(self, action_id, action)
-	if action_id == hash("key_u") and action.pressed then
-		print("按下U，准备启动对话...")
-		msg.post("/typewriter_core#typewriter", "start_dialogue", { target_id = "0101" })
+	
+	local xuzhang_tongguo = save_manager.get("O0101_start")
+	if xuzhang_tongguo == false then
+		msg.post("/typewriter_core#typewriter", "start_dialogue", { target_id = "0101_start" })
+		print("我是傻逼")
 	end
 end
+
+-- function on_input(self, action_id, action)
+-- 	if action_id == hash("key_u") and action.pressed then
+-- 		print("按下U，准备启动对话...")
+-- 		msg.post("/typewriter_core#typewriter", "start_dialogue", { target_id = "0101_start" })
+-- 	end
+-- end
 

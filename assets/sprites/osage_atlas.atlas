@@ -1,8 +1,68 @@
 images {
+  image: "/assets/sprites/lihui/osage1.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage2.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage3.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage4.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage5.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage6.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage7.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage8.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osage9.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagelinyu1.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagelinyu2.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagephone1.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagephone2.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagephone3.png"
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/sprites/lihui/osagerouyanj1.png"
+  pivot_y: 1.0
+}
+images {
   image: "/assets/sprites/gunmu.png"
 }
 images {
-  image: "/assets/sprites/20251231.png"
+  image: "/assets/sprites/lihui/20251231.png"
   pivot_y: 1.0
 }
 extrude_borders: 2

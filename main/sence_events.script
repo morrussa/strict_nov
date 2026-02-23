@@ -1,0 +1,115 @@
+local osage_fangjian_collision = require("assets.collision.osage_fangjian_collision")
+local save_manager = require("main.modules.save_manager")
+-- -------------------------------------------------------------------------
+-- 1. 变量
+-- -------------------------------------------------------------------------
+local touch_osage_lock = false
+
+-- 按房间组织的动画表（可自由扩展新房间）
+local room_animations = {
+	[1] = {
+		"osagechan1", "osagechan2", "osagechan3", "osagechan4",
+		"osagechan5", "osagechan6", "osagechan7", "osagechan8",
+		"osagechan9", "osagechan10",
+	},
+	[2] = {
+		"gunmu",
+	},
+	[3] = {
+		"gunmu",
+	},
+}
+
+-- 备用图（当不在房间时显示）
+local FALLBACK_ANIM = "gunmu"
+
+-- -------------------------------------------------------------------------
+-- 2.具体实现
+-- -------------------------------------------------------------------------
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+
+	-- 确保随机序列每次不同
+	math.randomseed(os.time())
+	math.random(); math.random(); math.random()
+
+	-- 获取当前房间号（0 表示不在房间）
+	local room = save_manager.get("osage_in_fangjian") or 0
+
+	-- 根据房间号设置初始动画
+	if room > 0 and room_animations[room] then
+		-- 显示该房间的第一个动画（可根据需要改为随机选一个）
+		self.current_anim_id = room_animations[room][1]
+	else
+		self.current_anim_id = FALLBACK_ANIM
+	end
+
+	sprite.play_flipbook("#osage_fangjian", hash(self.current_anim_id))
+end
+
+-- 随机切换到当前房间的另一个动画（仅在有效房间内执行）
+local function switch_to_random_other_animation(self)
+	local room = save_manager.get("osage_in_fangjian") or 0
+	local anim_list = room_animations[room]
+
+	-- 如果不在有效房间或无动画列表，直接返回
+	if room == 0 or not anim_list then
+		return
+	end
+
+	local next_anim_id = self.current_anim_id
+
+	-- 循环直到随机出一个不一样的 ID
+	while next_anim_id == self.current_anim_id do
+		local index = math.random(1, #anim_list)
+		next_anim_id = anim_list[index]
+	end
+
+	-- 更新状态并执行切换
+	self.current_anim_id = next_anim_id
+	sprite.play_flipbook("#osage_fangjian", hash(self.current_anim_id))
+
+	print("Switched to: " .. self.current_anim_id)
+end
+
+-- -------------------------------------------------------------------------
+-- 3. 输入与消息处理
+-- -------------------------------------------------------------------------
+
+function on_input(self, action_id, action)
+	-- 只在房间号 > 0 时响应点击（即在某个房间内）
+	local room = save_manager.get("osage_in_fangjian") or 0
+	if room == 0 then
+		return
+	end
+
+	-- 检测点击
+	if (action_id == hash("touch") or action_id == hash("mouse_button_left")) 
+	and action.pressed 
+	and touch_osage_lock == false then
+
+		-- 拼回 .PNG 以匹配碰撞模块里的 table key
+		local data_key = self.current_anim_id .. ".PNG"
+
+		if osage_fangjian_collision.check(data_key, action.x, action.y) then
+			msg.post("/typewriter_core#typewriter", "start_dialogue", { target_id = "01_ri_chang_dui_hua" })
+			touch_osage_lock = true
+		end
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("switch_random_animation") then
+		switch_to_random_other_animation(self)
+		touch_osage_lock = false
+	elseif message_id == hash("switch_osage_anim") then
+		local target_anim = message.anim
+		sprite.play_flipbook("#osage_fangjian", target_anim)
+		touch_osage_lock = false
+	elseif message_id == hash("switch_bg_animation") then
+		local target_anim = message.anim
+		sprite.play_flipbook("#background", target_anim)
+		touch_osage_lock = false
+	end
+end

@@ -1,0 +1,48 @@
+images {
+  image: "/assets/sprites/fangjian/osagechan1.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan10.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan2.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan3.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan4.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan5.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan6.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan7.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan8.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan9.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/fangjian/osagechan11.PNG"
+  sprite_trim_mode: SPRITE_TRIM_MODE_6
+}
+images {
+  image: "/assets/sprites/gunmu.png"
+}
+extrude_borders: 2

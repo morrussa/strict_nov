@@ -17,7 +17,7 @@ input_method = HiddenInputField
 scale_mode = stretch
 
 [project]
-title = mcode_example
+title = 与小辫子酱的三十日
 custom_resources = /dialogue/
 dependencies#0 = https://github.com/d954mas/defold-utf8/archive/master.zip
 

@@ -1,4 +1,15 @@
 images {
+  image: "/assets/ui/\344\270\212\344\270\213\351\273\221\346\235\241.png"
+  pivot_x: 0.0
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/ui/\345\217\263\344\276\247\345\270\270\351\251\273\350\247\246\345\217\221\351\200\211\351\241\271.png"
+}
+images {
+  image: "/assets/ui/\345\255\230\346\241\243\347\225\214\351\235\242\350\203\214\346\231\257\346\235\277.png"
+}
+images {
   image: "/assets/ui/\345\257\271\350\257\235\346\241\206.png"
   pivot_y: 1.0
 }
@@ -6,6 +17,34 @@ images {
   image: "/assets/ui/\346\226\207\345\255\227\351\200\201.png"
 }
 images {
+  image: "/assets/ui/\347\241\256\350\256\244\345\255\230\346\241\243.png"
+}
+images {
   image: "/assets/ui/\351\200\211\351\241\271.png"
+}
+images {
+  image: "/assets/ui/\347\220\206\346\231\272\350\203\214\346\235\277.png"
+  pivot_x: 0.0
+  pivot_y: 0.0
+}
+images {
+  image: "/assets/ui/\347\220\206\346\231\272.png"
+  pivot_x: 0.0
+  pivot_y: 0.0
+}
+images {
+  image: "/assets/ui/phone_big1.png"
+}
+images {
+  image: "/assets/ui/phone_big2.png"
+}
+images {
+  image: "/assets/ui/phone1.png"
+}
+images {
+  image: "/assets/ui/phone2.png"
+}
+images {
+  image: "/assets/ui/\351\200\211\351\241\2712.png"
 }
 extrude_borders: 2

@@ -3,4 +3,24 @@ images {
   pivot_x: 0.0
   pivot_y: 1.0
 }
+images {
+  image: "/assets/background/tiantai.png"
+  pivot_x: 0.0
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/background/\345\261\213\345\206\205\350\203\214\346\231\257.png"
+  pivot_x: 0.0
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/background/yushi.png"
+  pivot_x: 0.0
+  pivot_y: 1.0
+}
+images {
+  image: "/assets/background/keting.jpg"
+  pivot_x: 0.0
+  pivot_y: 1.0
+}
 extrude_borders: 2
